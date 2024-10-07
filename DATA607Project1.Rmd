@@ -1,0 +1,75 @@
+---
+title: "DATA607Project1"
+author: "Erick Hadi"
+date: "2024-10-06"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## DATA 607 Project 1 
+
+In this project, you’re given a text file with chess tournament results where the information has some structure. Your
+job is to create an R Markdown file that generates a .CSV file (that could for example be imported into a SQL database)
+with the following information for all of the players:
+Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponents
+
+## Load the data
+```{r}
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+```
+
+```{r}
+gitlink <- "https://raw.githubusercontent.com/ErickH1/DATA607Project1/refs/heads/main/tournamentinfo.txt"
+chess_raw_data <- readLines(gitlink)
+head(chess_raw_data, 7)
+```
+## Data Processing 
+Inserting text data into a matrix to make data capturing and processing easier.
+```{r}
+chess_data_matrix <- matrix(unlist(chess_raw_data), byrow=TRUE)
+matrix_1 <- chess_data_matrix[seq(5,length(chess_data_matrix),3)]
+matrix_2 <- chess_data_matrix[seq(6,length(chess_data_matrix),3)]
+
+head(chess_data_matrix,10)
+head(matrix_1)
+head(matrix_2)
+```
+## Extracting Chess Data
+Using Regex and string manipulation to extract relevant information into vectors.
+```{r}
+ID <- as.numeric(str_extract(matrix_1, '\\d+'))
+
+Name <- str_trim(str_extract(str_extract(matrix_1, '[A-z].{1,32}'), '.+\\s{2,}'))
+
+State <- str_extract(matrix_2, '[A-Z]{2}') 
+
+Total_Points <- as.numeric(str_extract(matrix_1, '\\d+\\.\\d'))
+
+Pre_Rating <- as.numeric(str_extract(str_extract(matrix_2, 'R:.{8,}-'), '\\d{1,4}'))
+
+Rounds <- str_extract_all(matrix_1, '[A-Z]\\s{2,}\\d+')
+Rounds <- str_extract_all(Rounds, '\\d+')
+```
+## Calculate Avg Opponent Rating
+Calculating avg opponent rating using pre rating and rounds vectors. Instead of for loops utilized sapply.
+```{r}
+Avg_Opp_Pre_Rating <- sapply(Rounds, function(x) round(mean(Pre_Rating[as.numeric(x)]), 0))
+Avg_Opp_Pre_Rating
+```
+## Inserting Extracted Data Into Chess Data Frame
+```{r}
+chess_data <- data.frame(ID,Name,State,Total_Points,Pre_Rating,Avg_Opp_Pre_Rating)
+head(chess_data)
+```
+
+## Export Data to CSV 
+```{r}
+write.csv(chess_data, "chesstournamentinfo.csv")
+```
